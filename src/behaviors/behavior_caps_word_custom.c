@@ -27,7 +27,7 @@ extern struct zmk_keycode_state_changed *as_zmk_keycode_state_changed(const zmk_
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
-
+#warning "behavior_caps_word_custom.c is being compiled!"
 struct caps_word_continue_item {
     uint16_t page;
     uint32_t id;
