@@ -1,13 +1,10 @@
 # Copyright (c) 2025 The ZMK Contributors
 # SPDX-License-Identifier: MIT
-
-zephyr_library()
-
 if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL OR NOT CONFIG_ZMK_SPLIT)
-    set(ZMK_APP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../zmk/app)
-
-    target_sources(app PRIVATE
-        ${ZMK_APP_DIR}/src/hid.c
-        ${ZMK_APP_DIR}/src/events/keycode_state_changed.c
-    )
+    zephyr_library()
+    zephyr_library_sources(${ZEPHYR_BASE}/misc/empty_file.c)
+    zephyr_library_include_directories(${ZEPHYR_LVGL_MODULE_DIR})
+    zephyr_library_include_directories(${ZEPHYR_BASE}/drivers)  
+    zephyr_library_include_directories(${CMAKE_SOURCE_DIR}/include)
+    zephyr_library_sources(behavior_caps_word_custom.c)
 endif()
