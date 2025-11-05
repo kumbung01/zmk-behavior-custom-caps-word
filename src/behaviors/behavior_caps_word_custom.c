@@ -85,8 +85,8 @@ static const struct behavior_driver_api behavior_caps_word_driver_api = {
 
 static int caps_word_keycode_state_changed_listener(const zmk_event_t *eh);
 
-ZMK_LISTENER(behavior_caps_word, caps_word_keycode_state_changed_listener);
-ZMK_SUBSCRIPTION(behavior_caps_word, zmk_keycode_state_changed);
+ZMK_LISTENER(behavior_caps_word_custom, caps_word_keycode_state_changed_listener);
+ZMK_SUBSCRIPTION(behavior_caps_word_custom, zmk_keycode_state_changed);
 
 #define GET_DEV(inst) DEVICE_DT_INST_GET(inst),
 static const struct device *devs[] = {DT_INST_FOREACH_STATUS_OKAY(GET_DEV)};
