@@ -3,6 +3,13 @@
 
 zephyr_library()
 
-zephyr_library_sources( behavior_caps_word_custom.c )
-zephyr_include_directories(${APPLICATION_SOURCE_DIR}/include)
-zephyr_library_include_directories(.)
+if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL OR NOT CONFIG_ZMK_SPLIT)
+    set(ZMK_APP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../zmk/app)
+
+    target_sources(app PRIVATE
+        ${ZMK_APP_DIR}/src/hid.c
+        ${ZMK_APP_DIR}/src/events/keycode_state_changed.c
+    )
+
+    add_subdirectory(src/behaviors)
+endif()
