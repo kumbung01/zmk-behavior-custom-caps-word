@@ -3,7 +3,6 @@
 
 config ZMK_BEHAVIOR_CAPS_WORD_CUSTOM
     bool "Custom Caps Word Behavior"
-    depends on !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL
     default y
     help
       Enable custom caps word behavior (central only for split keyboards)
