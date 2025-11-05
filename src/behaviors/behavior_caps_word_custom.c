@@ -20,10 +20,6 @@
 #include <zmk/hid.h>
 #include <zmk/keymap.h>
 
-// extern zmk_mod_flags_t zmk_hid_get_explicit_mods(void);
-// extern const struct zmk_event_type zmk_event_zmk_keycode_state_changed;
-// extern struct zmk_keycode_state_changed *as_zmk_keycode_state_changed(const zmk_event_t *eh);
-
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
