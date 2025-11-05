@@ -22,14 +22,7 @@
 
 extern zmk_mod_flags_t zmk_hid_get_explicit_mods(void);
 extern const struct zmk_event_type zmk_event_zmk_keycode_state_changed;
-
-static inline struct zmk_keycode_state_changed *
-as_zmk_keycode_state_changed(const zmk_event_t *eh) {
-    if (eh && eh->event && eh->event->type == &zmk_event_zmk_keycode_state_changed) {
-        return (struct zmk_keycode_state_changed *)eh->event->data;
-    }
-    return NULL;
-}
+extern struct zmk_keycode_state_changed *as_zmk_keycode_state_changed(const zmk_event_t *eh);
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
