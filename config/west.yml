@@ -1,0 +1,14 @@
+# Copyright (c) 2025 The ZMK Contributors
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+
+manifest:
+  remotes:
+    - name: zmkfirmware
+      url-base: https://github.com/zmkfirmware
+  projects:
+    - name: zmk
+      remote: zmkfirmware
+      revision: main
+      import: app/west.yml
+  self:
+    path: config

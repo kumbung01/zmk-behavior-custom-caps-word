@@ -1,0 +1,16 @@
+# Copyright (c) 2025 The ZMK Contributors
+# SPDX-License-Identifier: MIT
+
+description: |
+  Complete specification of ESB split connection
+
+compatible: "zmk,behavior-caps-word-custom"
+
+include: zero_param.yaml
+
+properties:
+  continue-list:
+    type: array
+    required: true
+  mods:
+    type: int
