@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#define DT_DRV_COMPAT zmk_behavior_caps_word_custom
+#define DT_DRV_COMPAT zmk_behavior_caps_word
 
 #include <zephyr/device.h>
 #include <drivers/behavior.h>
@@ -24,7 +24,7 @@
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
-#warning "behavior_caps_word_custom.c is being compiled!"
+
 struct caps_word_continue_item {
     uint16_t page;
     uint32_t id;
@@ -33,6 +33,7 @@ struct caps_word_continue_item {
 
 struct behavior_caps_word_config {
     zmk_mod_flags_t mods;
+    uint8_t index;
     uint8_t continuations_count;
     struct caps_word_continue_item continuations[];
 };
@@ -41,30 +42,48 @@ struct behavior_caps_word_data {
     bool active;
 };
 
+static const struct device *devs[DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT)];
+static void deactivate_caps_word(const struct device *dev);
+static void deactivate_caps_word_work_cb(struct k_work *work) {
+    for (int i = 0; i < DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT); i++) {
+        const struct device *dev = devs[i];
+        if (dev == NULL) {
+            continue;
+        }
+
+        struct behavior_caps_word_data *data = dev->data;
+        if (!data->active) {
+            continue;
+        }
+
+        deactivate_caps_word(dev);
+    }
+}
+K_WORK_DELAYABLE_DEFINE(deactivate_caps_word_work, deactivate_caps_word_work_cb);
+
 static void activate_caps_word(const struct device *dev) {
     struct behavior_caps_word_data *data = dev->data;
-    LOG_WRN("activtate");
+
     data->active = true;
 
-    raise_zmk_caps_word_state_changed(
-        (struct zmk_caps_word_state_changed){.active = true});
+    k_work_reschedule(&deactivate_caps_word_work, K_SECONDS(5));
+    raise_zmk_caps_word_state_changed((struct zmk_caps_word_state_changed){.active = true});
 }
 
 static void deactivate_caps_word(const struct device *dev) {
     struct behavior_caps_word_data *data = dev->data;
-    LOG_WRN("deactivtate");
+
     data->active = false;
 
-    raise_zmk_caps_word_state_changed(
-        (struct zmk_caps_word_state_changed){.active = false});
+    k_work_cancel_delayable(&deactivate_caps_word_work);
+    raise_zmk_caps_word_state_changed((struct zmk_caps_word_state_changed){.active = false});
 }
 
 static int on_caps_word_binding_pressed(struct zmk_behavior_binding *binding,
                                         struct zmk_behavior_binding_event event) {
     const struct device *dev = zmk_behavior_get_binding(binding->behavior_dev);
     struct behavior_caps_word_data *data = dev->data;
-    
-    LOG_WRN("on caps word binding pressed");
+
     if (data->active) {
         deactivate_caps_word(dev);
     } else {
@@ -76,8 +95,6 @@ static int on_caps_word_binding_pressed(struct zmk_behavior_binding *binding,
 
 static int on_caps_word_binding_released(struct zmk_behavior_binding *binding,
                                          struct zmk_behavior_binding_event event) {
-                                        
-    LOG_WRN("on caps word binding released");
     return ZMK_BEHAVIOR_OPAQUE;
 }
 
@@ -91,11 +108,8 @@ static const struct behavior_driver_api behavior_caps_word_driver_api = {
 
 static int caps_word_keycode_state_changed_listener(const zmk_event_t *eh);
 
-ZMK_LISTENER(behavior_caps_word_custom, caps_word_keycode_state_changed_listener);
-ZMK_SUBSCRIPTION(behavior_caps_word_custom, zmk_keycode_state_changed);
-
-#define GET_DEV(inst) DEVICE_DT_INST_GET(inst),
-static const struct device *devs[] = {DT_INST_FOREACH_STATUS_OKAY(GET_DEV)};
+ZMK_LISTENER(behavior_caps_word, caps_word_keycode_state_changed_listener);
+ZMK_SUBSCRIPTION(behavior_caps_word, zmk_keycode_state_changed);
 
 static bool caps_word_is_caps_includelist(const struct behavior_caps_word_config *config,
                                           uint16_t usage_page, uint8_t usage_id,
@@ -130,7 +144,6 @@ static bool caps_word_is_numeric(uint8_t usage_id) {
 static void caps_word_enhance_usage(const struct behavior_caps_word_config *config,
                                     struct zmk_keycode_state_changed *ev) {
     if (ev->usage_page != HID_USAGE_KEY || !caps_word_is_alpha(ev->keycode)) {
-        LOG_WRN("usage_page: %d, is_alpha: %d", ev->usage_page != HID_USAGE_KEY, caps_word_is_alpha(ev->keycode));
         return;
     }
 
@@ -144,8 +157,11 @@ static int caps_word_keycode_state_changed_listener(const zmk_event_t *eh) {
         return ZMK_EV_EVENT_BUBBLE;
     }
 
-    for (int i = 0; i < ARRAY_SIZE(devs); i++) {
+    for (int i = 0; i < DT_NUM_INST_STATUS_OKAY(DT_DRV_COMPAT); i++) {
         const struct device *dev = devs[i];
+        if (dev == NULL) {
+            continue;
+        }
 
         struct behavior_caps_word_data *data = dev->data;
         if (!data->active) {
@@ -165,7 +181,15 @@ static int caps_word_keycode_state_changed_listener(const zmk_event_t *eh) {
         }
     }
 
+    k_work_reschedule(&deactivate_caps_word_work, K_SECONDS(5));
+
     return ZMK_EV_EVENT_BUBBLE;
+}
+
+static int behavior_caps_word_init(const struct device *dev) {
+    const struct behavior_caps_word_config *config = dev->config;
+    devs[config->index] = dev;
+    return 0;
 }
 
 #define CAPS_WORD_LABEL(i, _n) DT_INST_LABEL(i)
@@ -177,12 +201,13 @@ static int caps_word_keycode_state_changed_listener(const zmk_event_t *eh) {
 
 #define KP_INST(n)                                                                                 \
     static struct behavior_caps_word_data behavior_caps_word_data_##n = {.active = false};         \
-    static const struct behavior_caps_word_config behavior_caps_word_config_##n = {                \
+    static struct behavior_caps_word_config behavior_caps_word_config_##n = {                      \
+        .index = n,                                                                                \
         .mods = DT_INST_PROP_OR(n, mods, MOD_LSFT),                                                \
         .continuations = {LISTIFY(DT_INST_PROP_LEN(n, continue_list), BREAK_ITEM, (, ), n)},       \
         .continuations_count = DT_INST_PROP_LEN(n, continue_list),                                 \
     };                                                                                             \
-    BEHAVIOR_DT_INST_DEFINE(n, NULL, NULL, &behavior_caps_word_data_##n,                           \
+    BEHAVIOR_DT_INST_DEFINE(n, behavior_caps_word_init, NULL, &behavior_caps_word_data_##n,        \
                             &behavior_caps_word_config_##n, POST_KERNEL,                           \
                             CONFIG_KERNEL_INIT_PRIORITY_DEFAULT, &behavior_caps_word_driver_api);
 
